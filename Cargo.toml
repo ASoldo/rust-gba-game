@@ -19,5 +19,6 @@ lto = "fat"
 debug = true
 
 [features]
+default = ["entry"]
 entry = []
 

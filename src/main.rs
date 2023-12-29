@@ -16,6 +16,7 @@
 
 use agb::{
     display::object::{Graphics, Tag},
+    display::{HEIGHT, WIDTH},
     include_aseprite,
     input::Button,
     println, Gba,
@@ -59,7 +60,7 @@ fn main(mut gba: Gba) -> ! {
     sprite2.set_x(150).set_y(50).show();
 
     loop {
-        if input.is_pressed(Button::RIGHT) && sprite1_pos.x < agb::display::WIDTH - 16 {
+        if input.is_pressed(Button::RIGHT) && sprite1_pos.x < WIDTH - 16 {
             sprite1_pos.x += 1;
         }
         if input.is_pressed(Button::LEFT) && sprite1_pos.x > 0 {
@@ -68,7 +69,7 @@ fn main(mut gba: Gba) -> ! {
         if input.is_pressed(Button::UP) && sprite1_pos.y > 0 {
             sprite1_pos.y -= 1;
         }
-        if input.is_pressed(Button::DOWN) && sprite1_pos.y < agb::display::HEIGHT - 16 {
+        if input.is_pressed(Button::DOWN) && sprite1_pos.y < HEIGHT - 16 {
             sprite1_pos.y += 1;
         }
 
