@@ -18,7 +18,7 @@ opt-level = 3
 lto = "fat"
 debug = true
 
-[features]
-default = ["entry"]
-entry = []
+# [features]
+# default = ["entry"]
+# entry = []
 

@@ -16,11 +16,18 @@
 
 use agb::{
     display::object::{Graphics, Tag},
-    display::{HEIGHT, WIDTH},
-    include_aseprite,
+    display::{
+        tiled::{RegularBackgroundSize, TiledMap},
+        window::WinIn,
+        Priority, HEIGHT, WIDTH,
+    },
+    fixnum::Rect,
+    include_aseprite, include_background_gfx,
     input::Button,
+    interrupt::VBlank,
     println, Gba,
 };
+include_background_gfx!(tileset1, tiles => "assets/Tileset1.aseprite");
 
 const GRAPHICS: &Graphics = include_aseprite!("assets/Sprites.aseprite");
 const SPRITE1: &Tag = &GRAPHICS.tags().get("Sprite1");
@@ -37,8 +44,100 @@ struct DemoLog {
 // The main function must take 1 arguments and never return. The agb::entry decorator
 // ensures that everything is in order. `agb` will call this after setting up the stack
 // and interrupt handlers correctly. It will also handle creating the `Gba` struct for you.
-#[cfg_attr(feature = "entry", agb::entry)]
+// #[cfg_attr(feature = "entry", agb::entry)]
+
+#[agb::entry]
+fn entry(gba: Gba) -> ! {
+    main(gba);
+}
+
 fn main(mut gba: Gba) -> ! {
+    let vblank = VBlank::get();
+    let tileset = tileset1::tiles.tiles;
+    let (gfx, mut vram) = gba.display.video.tiled0();
+    vram.set_background_palettes(tileset1::PALETTES);
+    let mut bg = gfx.background(
+        Priority::P3,
+        RegularBackgroundSize::Background32x32,
+        tileset.format(),
+    );
+
+    let mut bg2 = gfx.background(
+        Priority::P1,
+        RegularBackgroundSize::Background32x32,
+        tileset.format(),
+    );
+    for y in 0..20u16 {
+        for x in 0..30u16 {
+            bg.set_tile(
+                &mut vram,
+                (x, y).into(),
+                &tileset,
+                tileset1::tiles.tile_settings[0],
+            );
+        }
+    }
+    for y in 0..10u16 {
+        for x in 0..10u16 {
+            bg.set_tile(
+                &mut vram,
+                (x, y).into(),
+                &tileset,
+                tileset1::tiles.tile_settings[1],
+            );
+        }
+    }
+    for y in 0..5u16 {
+        for x in 0..5u16 {
+            bg.set_tile(
+                &mut vram,
+                (x, y).into(),
+                &tileset,
+                tileset1::tiles.tile_settings[2],
+            );
+        }
+    }
+
+    bg2.set_tile(
+        &mut vram,
+        (12 as u16, 12 as u16).into(),
+        &tileset,
+        tileset1::tiles.tile_settings[3],
+    );
+    bg.set_tile(
+        &mut vram,
+        (1 as u16, 1 as u16).into(),
+        &tileset,
+        tileset1::tiles.tile_settings[4],
+    );
+    bg.set_tile(
+        &mut vram,
+        (2 as u16, 2 as u16).into(),
+        &tileset,
+        tileset1::tiles.tile_settings[5],
+    );
+    let mut window = gba.display.window.get();
+    window
+        .win_in(WinIn::Win0)
+        .set_background_enable(bg.background(), true)
+        .set_object_enable(true)
+        .enable();
+
+    window
+        .win_out()
+        .enable()
+        .set_background_enable(bg.background(), true)
+        .set_background_enable(bg2.background(), true)
+        .set_object_enable(true)
+        .set_blend_enable(true);
+
+    // let mut blend = gba.display.blend.get();
+    // blend
+    //     .set_backdrop_enable(Layer::Top, true)
+    //     .set_background_enable(Layer::Bottom, bg.background(), true)
+    //     .set_blend_mode(BlendMode::Normal);
+
+    // Demo Game
     println!("Demo Game");
     let soldo: i32 = 10;
     println!("{:?}", soldo);
@@ -59,6 +158,11 @@ fn main(mut gba: Gba) -> ! {
     let mut sprite2 = object.object_sprite(SPRITE2.sprite(0));
     sprite2.set_x(150).set_y(50).show();
 
+    bg.commit(&mut vram);
+    bg.show();
+    bg2.commit(&mut vram);
+    bg2.show();
+
     loop {
         if input.is_pressed(Button::RIGHT) && sprite1_pos.x < WIDTH - 16 {
             sprite1_pos.x += 1;
@@ -76,8 +180,13 @@ fn main(mut gba: Gba) -> ! {
         sprite1
             .set_x(sprite1_pos.x as u16)
             .set_y(sprite1_pos.y as u16);
-        agb::display::busy_wait_for_vblank();
-
+        window
+            .win_in(WinIn::Win0)
+            .set_position(&Rect::new((0, 0).into(), (100, 160).into()));
+        // agb::display::busy_wait_for_vblank();
+        vblank.wait_for_vblank();
+        window.commit();
+        // blend.commit();
         object.commit();
         input.update();
     }
