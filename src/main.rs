@@ -55,6 +55,7 @@ fn entry(gba: Gba) -> ! {
 }
 
 fn main(mut gba: Gba) -> ! {
+    let mut start: bool = false;
     println!("{}", MESSAGE);
     let vblank = VBlank::get();
     let tileset = tileset1::tiles.tiles;
@@ -80,75 +81,57 @@ fn main(mut gba: Gba) -> ! {
 
     for y in 0..20u16 {
         for x in 0..30u16 {
+            // Calculate the index in the 1D TILE_MAP array based on x, y coordinates
+            let index = y as usize * 30 + x as usize; // Assuming row-major order
+
+            // Get the tile ID from the TILE_MAP using the calculated index
+            let tile_id = TILE_MAP[index] as usize; // Cast to usize to use as an index
+
+            // Set the tile on the background using the tile ID from TILE_MAP
+            // Make sure that tileset1::tiles.tile_settings[tile_id] gives you the correct setting for that tile ID
             bg.set_tile(
                 &mut vram,
                 (x, y).into(),
                 &tileset,
-                tileset1::tiles.tile_settings[0],
-            );
-        }
-    }
-    for y in 0..10u16 {
-        for x in 0..10u16 {
-            bg.set_tile(
-                &mut vram,
-                (x, y).into(),
-                &tileset,
-                tileset1::tiles.tile_settings[1],
-            );
-        }
-    }
-    for y in 0..5u16 {
-        for x in 0..5u16 {
-            bg.set_tile(
-                &mut vram,
-                (x, y).into(),
-                &tileset,
-                tileset1::tiles.tile_settings[2],
+                tileset1::tiles.tile_settings[tile_id],
             );
         }
     }
 
-    bg3.set_tile(
-        &mut vram,
-        (0 as u16, 0 as u16).into(),
-        &tileset,
-        tileset1::tiles.tile_settings[9],
-    );
+    for i in 0..3u16 {
+        bg3.set_tile(
+            &mut vram,
+            (i as u16, 0 as u16).into(),
+            &tileset,
+            tileset1::tiles.tile_settings[36],
+        );
+    }
 
     bg2.set_tile(
         &mut vram,
         (12 as u16, 12 as u16).into(),
         &tileset,
-        tileset1::tiles.tile_settings[3],
+        tileset1::tiles.tile_settings[37],
     );
-    bg.set_tile(
-        &mut vram,
-        (1 as u16, 1 as u16).into(),
-        &tileset,
-        tileset1::tiles.tile_settings[4],
-    );
-    bg.set_tile(
-        &mut vram,
-        (2 as u16, 2 as u16).into(),
-        &tileset,
-        tileset1::tiles.tile_settings[5],
-    );
+
     let mut window = gba.display.window.get();
     window
         .win_in(WinIn::Win0)
         .set_background_enable(bg3.background(), true)
-        .set_object_enable(false)
-        .set_position(&Rect::new((0, 0).into(), (8, 8).into()))
-        .enable();
+        .set_background_enable(bg.background(), true)
+        .set_object_enable(true)
+        .set_blend_enable(true)
+        .set_position(&Rect::new((0, 0).into(), (24, 8).into()))
+        // .enable()
+    ;
 
     window
         .win_out()
-        .enable()
         .set_background_enable(bg.background(), true)
         .set_background_enable(bg2.background(), true)
         .set_object_enable(true)
-        .set_blend_enable(true);
+        .set_blend_enable(true)
+        .enable();
 
     // let mut blend = gba.display.blend.get();
     // blend
@@ -183,15 +166,14 @@ fn main(mut gba: Gba) -> ! {
     bg.show();
     bg2.commit(&mut vram);
     bg2.show();
-    bg3.commit(&mut vram);
-    bg3.show();
-
     loop {
         if input.is_pressed(Button::RIGHT) && sprite1_pos.x < WIDTH - 16 {
             sprite1_pos.x += 1;
+            sprite1.set_hflip(false);
         }
         if input.is_pressed(Button::LEFT) && sprite1_pos.x > 0 {
             sprite1_pos.x -= 1;
+            sprite1.set_hflip(true);
         }
         if input.is_pressed(Button::UP) && sprite1_pos.y > 0 {
             sprite1_pos.y -= 1;
@@ -199,16 +181,25 @@ fn main(mut gba: Gba) -> ! {
         if input.is_pressed(Button::DOWN) && sprite1_pos.y < HEIGHT - 16 {
             sprite1_pos.y += 1;
         }
+        if input.is_just_pressed(Button::START) {
+            start = !start;
+            if start {
+                bg3.commit(&mut vram);
+                bg3.show();
+                window.win_in(WinIn::Win0).enable();
+            } else {
+                bg3.hide();
+                window.win_in(WinIn::Win0).disable();
+            }
+            window.commit();
+        }
 
         sprite1
             .set_x(sprite1_pos.x as u16)
             .set_y(sprite1_pos.y as u16);
-        // window
-        //     .win_in(WinIn::Win0)
-        //     .set_position(&Rect::new((0, 160).into(), (260, 64).into()));
-        // agb::display::busy_wait_for_vblank();
+
         vblank.wait_for_vblank();
-        window.commit();
+
         // blend.commit();
         object.commit();
         input.update();

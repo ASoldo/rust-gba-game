@@ -27,18 +27,18 @@ fn export_tiles(map: &tiled::Map) -> TokenStream {
 
         match tile {
             Some(tile) => {
-                let tile_id = tile.id() as i16;
+                let tile_id = tile.id() as u16;
                 quote! { #tile_id }
             }
             None => {
-                quote! { -1i16 } // Using `u16` explicitly
+                quote! { 0u16 } // Using `u16` explicitly
             }
         }
     });
 
     // Generate the array of tile IDs in a Rust constant
     quote! {
-        pub const TILE_MAP: [i16; #width * #height] = [#(#map_tiles),*];
+        pub const TILE_MAP: [u16; #width * #height] = [#(#map_tiles),*];
     }
 }
 

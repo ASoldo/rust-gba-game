@@ -3,18 +3,18 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "",
+    "activeFile": "FirstMap.tmx",
     "expandedProjectPaths": [
         "."
     ],
     "file.lastUsedOpenFilter": "All Files (*)",
     "fileStates": {
         "FirstMap.tmx": {
-            "scale": 1,
-            "selectedLayer": 0,
+            "scale": 3,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 147,
-                "y": 40.5
+                "x": 263.8333333333333,
+                "y": 37.5
             }
         },
         "Tileset1-Sheet.tsx": {
@@ -27,12 +27,14 @@
     "map.tileHeight": 8,
     "map.tileWidth": 8,
     "openFiles": [
+        "FirstMap.tmx",
+        "Tileset1-Sheet.tsx"
     ],
     "project": "Maps.tiled-project",
     "property.type": "int",
     "recentFiles": [
-        "FirstMap.tmx",
-        "Tileset1-Sheet.tsx"
+        "Tileset1-Sheet.tsx",
+        "FirstMap.tmx"
     ],
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {
