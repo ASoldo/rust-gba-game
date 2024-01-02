@@ -1,0 +1,42 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "file.lastUsedOpenFilter": "All Files (*)",
+    "fileStates": {
+        "FirstMap.tmx": {
+            "scale": 1,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 147,
+                "y": 40.5
+            }
+        },
+        "Tileset1-Sheet.tsx": {
+            "scaleInDock": 5.5,
+            "scaleInEditor": 8
+        }
+    },
+    "last.imagePath": "/home/rootster/Documents/gba-rust-game/assets",
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 8,
+    "map.tileWidth": 8,
+    "openFiles": [
+    ],
+    "project": "Maps.tiled-project",
+    "property.type": "int",
+    "recentFiles": [
+        "FirstMap.tmx",
+        "Tileset1-Sheet.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 8,
+        "width": 8
+    }
+}

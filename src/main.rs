@@ -27,6 +27,9 @@ use agb::{
     interrupt::VBlank,
     println, Gba,
 };
+
+include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+
 include_background_gfx!(tileset1, tiles => "assets/Tileset1.aseprite");
 
 const GRAPHICS: &Graphics = include_aseprite!("assets/Sprites.aseprite");
@@ -52,6 +55,7 @@ fn entry(gba: Gba) -> ! {
 }
 
 fn main(mut gba: Gba) -> ! {
+    println!("{}", MESSAGE);
     let vblank = VBlank::get();
     let tileset = tileset1::tiles.tiles;
     let (gfx, mut vram) = gba.display.video.tiled0();
@@ -63,10 +67,17 @@ fn main(mut gba: Gba) -> ! {
     );
 
     let mut bg2 = gfx.background(
+        Priority::P0,
+        RegularBackgroundSize::Background32x32,
+        tileset.format(),
+    );
+
+    let mut bg3 = gfx.background(
         Priority::P1,
         RegularBackgroundSize::Background32x32,
         tileset.format(),
     );
+
     for y in 0..20u16 {
         for x in 0..30u16 {
             bg.set_tile(
@@ -98,6 +109,13 @@ fn main(mut gba: Gba) -> ! {
         }
     }
 
+    bg3.set_tile(
+        &mut vram,
+        (0 as u16, 0 as u16).into(),
+        &tileset,
+        tileset1::tiles.tile_settings[9],
+    );
+
     bg2.set_tile(
         &mut vram,
         (12 as u16, 12 as u16).into(),
@@ -119,8 +137,9 @@ fn main(mut gba: Gba) -> ! {
     let mut window = gba.display.window.get();
     window
         .win_in(WinIn::Win0)
-        .set_background_enable(bg.background(), true)
-        .set_object_enable(true)
+        .set_background_enable(bg3.background(), true)
+        .set_object_enable(false)
+        .set_position(&Rect::new((0, 0).into(), (8, 8).into()))
         .enable();
 
     window
@@ -138,7 +157,7 @@ fn main(mut gba: Gba) -> ! {
     //     .set_blend_mode(BlendMode::Normal);
 
     // Demo Game
-    println!("Demo Game");
+    println!("Demo Gameee");
     let soldo: i32 = 10;
     println!("{:?}", soldo);
     let so: DemoLog = DemoLog { demo_id: 1 };
@@ -150,18 +169,22 @@ fn main(mut gba: Gba) -> ! {
     let object = gba.display.object.get_managed();
     let mut sprite1 = object.object_sprite(SPRITE1.sprite(0));
     let mut sprite1_pos = Position { x: 50, y: 50 };
+    sprite1.set_priority(Priority::P3);
     sprite1
         .set_x(sprite1_pos.x as u16)
         .set_y(sprite1_pos.y as u16)
         .show();
 
     let mut sprite2 = object.object_sprite(SPRITE2.sprite(0));
+    sprite2.set_priority(Priority::P3);
     sprite2.set_x(150).set_y(50).show();
 
     bg.commit(&mut vram);
     bg.show();
     bg2.commit(&mut vram);
     bg2.show();
+    bg3.commit(&mut vram);
+    bg3.show();
 
     loop {
         if input.is_pressed(Button::RIGHT) && sprite1_pos.x < WIDTH - 16 {
@@ -180,9 +203,9 @@ fn main(mut gba: Gba) -> ! {
         sprite1
             .set_x(sprite1_pos.x as u16)
             .set_y(sprite1_pos.y as u16);
-        window
-            .win_in(WinIn::Win0)
-            .set_position(&Rect::new((0, 0).into(), (100, 160).into()));
+        // window
+        //     .win_in(WinIn::Win0)
+        //     .set_position(&Rect::new((0, 160).into(), (260, 64).into()));
         // agb::display::busy_wait_for_vblank();
         vblank.wait_for_vblank();
         window.commit();

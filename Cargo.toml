@@ -18,6 +18,11 @@ opt-level = 3
 lto = "fat"
 debug = true
 
+[build-dependencies]
+proc-macro2 = "1.0.73"
+quote = "1.0.34"
+tiled = {version = "0.11.2", default-features = false}
+
 # [features]
 # default = ["entry"]
 # entry = []
