@@ -21,12 +21,17 @@ use agb::{
         window::WinIn,
         Priority, HEIGHT, WIDTH,
     },
+    fixnum::num,
     fixnum::Rect,
-    include_aseprite, include_background_gfx,
+    include_aseprite, include_background_gfx, include_wav,
     input::Button,
     interrupt::VBlank,
-    println, Gba,
+    println,
+    sound::mixer::{Frequency, SoundChannel},
+    Gba,
 };
+
+const SWORD_PICKUP: &[u8] = include_wav!("sfx/slime_death.wav");
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
@@ -55,6 +60,17 @@ fn entry(gba: Gba) -> ! {
 }
 
 fn main(mut gba: Gba) -> ! {
+    // Initialize the mixer
+    let mut mixer = gba.mixer.mixer(Frequency::Hz32768);
+    mixer.enable();
+
+    // Initialize the sound channel
+    let mut channel = SoundChannel::new(SWORD_PICKUP);
+    channel.playback(num!(1.0));
+
+    // Play the sound once
+    mixer.play_sound(channel);
+
     let mut start: bool = false;
     println!("{}", MESSAGE);
     let vblank = VBlank::get();
@@ -167,6 +183,7 @@ fn main(mut gba: Gba) -> ! {
     bg2.commit(&mut vram);
     bg2.show();
     loop {
+        mixer.frame();
         if input.is_pressed(Button::RIGHT) && sprite1_pos.x < WIDTH - 16 {
             sprite1_pos.x += 1;
             sprite1.set_hflip(false);
@@ -192,6 +209,11 @@ fn main(mut gba: Gba) -> ! {
                 window.win_in(WinIn::Win0).disable();
             }
             window.commit();
+        }
+        if input.is_just_pressed(Button::SELECT) {
+            let mut channel = SoundChannel::new(SWORD_PICKUP); // Replace with your desired sound
+            channel.playback(num!(1.0));
+            mixer.play_sound(channel);
         }
 
         sprite1
