@@ -196,13 +196,20 @@ fn main(mut gba: Gba) -> ! {
     // let sprite = controller.sprite(sprite);
     // entity.sprite.set_sprite(sprite);
 
+    // Find the frame count for Sprite1
+    let sprite1_frame_count = ANIMATION_FRAMES
+        .iter()
+        .find(|&&(name, _)| name == "Sprite1")
+        .map(|&(_, count)| count as usize)
+        .unwrap_or(1); // Default to 1 if not found
+
     let mut sprite1_anim_frame = 0;
 
     loop {
         tracker.step(&mut mixer);
         mixer.frame();
 
-        sprite1_anim_frame = (sprite1_anim_frame + 1) % (16 * 2);
+        sprite1_anim_frame = (sprite1_anim_frame + 1) % (16 * sprite1_frame_count);
 
         let frame_index = ANIM.sprite(sprite1_anim_frame / 16);
         let sprite_frame = object.sprite(frame_index);

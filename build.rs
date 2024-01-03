@@ -1,7 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::quote;
+use serde_json::Value;
 use std::{
-    env,
+    env, fs,
     fs::File,
     io::{BufWriter, Write},
     path::Path,
@@ -53,11 +54,13 @@ fn main() {
 
     // Generate additional code
     let additional_code = generate_code();
+    let frame_data = parse_aseprite_json(&["assets/anim.json", "assets/Sprites.json"]);
 
     // Combine all generated code
     let combined_code = quote! {
         #tiles
         #additional_code
+        #frame_data
     };
     println!("Combined code: {}", combined_code);
 
@@ -67,6 +70,41 @@ fn main() {
 
     // Write the combined generated code to the file
     write!(writer, "{}", combined_code.to_string()).expect("Failed to write to file");
+}
+
+fn parse_aseprite_json(paths: &[&str]) -> TokenStream {
+    let mut all_frame_data_tokens = Vec::new();
+
+    for path in paths {
+        let aseprite_file_path = Path::new(path);
+        // Inform Cargo to rerun this build script if the Aseprite JSON file changes
+        println!("cargo:rerun-if-changed={path}");
+
+        // Read the Aseprite JSON file
+        let file_content =
+            fs::read_to_string(aseprite_file_path).expect("Failed to read Aseprite file");
+
+        // Parse the file content as JSON
+        let json: Value = serde_json::from_str(&file_content).expect("Failed to parse JSON");
+
+        // Collect frame data for each tag
+        if let Some(tags) = json["meta"]["frameTags"].as_array() {
+            for tag in tags {
+                let tag_name = tag["name"].as_str().unwrap_or("unknown").to_string();
+                let frame_count =
+                    tag["to"].as_i64().unwrap_or(0) - tag["from"].as_i64().unwrap_or(0) + 1;
+                all_frame_data_tokens.push(quote! { (#tag_name, #frame_count) });
+            }
+        }
+    }
+
+    // Convert the collected tokens into a TokenStream
+    let frame_data = quote! { [#(#all_frame_data_tokens),*] };
+
+    // Generate the array of frame data in a Rust constant
+    quote! {
+        pub const ANIMATION_FRAMES: [(&str, i64); #frame_data.len()] = #frame_data;
+    }
 }
 
 /// Generate additional Rust code
