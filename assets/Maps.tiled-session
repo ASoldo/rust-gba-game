@@ -3,18 +3,29 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "FirstMap.tmx",
+    "activeFile": "Tileset1-Sheet.tsx",
     "expandedProjectPaths": [
         "."
     ],
     "file.lastUsedOpenFilter": "All Files (*)",
     "fileStates": {
+        "/home/rootster/Documents/agb/examples/the-purple-night/map/background.tsx": {
+            "scaleInDock": 1
+        },
+        "/home/rootster/Documents/agb/examples/the-purple-night/map/map.tmx": {
+            "scale": 3,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 22.833333333333336,
+                "y": 120.33333333333331
+            }
+        },
         "FirstMap.tmx": {
             "scale": 3,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 263.8333333333333,
-                "y": 37.5
+                "x": 263.16666666666663,
+                "y": 37.16666666666666
             }
         },
         "Tileset1-Sheet.tsx": {
@@ -33,8 +44,9 @@
     "project": "Maps.tiled-project",
     "property.type": "int",
     "recentFiles": [
+        "FirstMap.tmx",
         "Tileset1-Sheet.tsx",
-        "FirstMap.tmx"
+        "/home/rootster/Documents/agb/examples/the-purple-night/map/map.tmx"
     ],
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {

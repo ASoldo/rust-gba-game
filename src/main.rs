@@ -15,7 +15,7 @@
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
 
 use agb::{
-    display::object::{Graphics, Tag},
+    display::object::{Graphics, Tag, TagMap},
     display::{
         tiled::{RegularBackgroundSize, TiledMap},
         window::WinIn,
@@ -37,11 +37,14 @@ const THEME: Track = include_xm!("sfx/gwilym-theme2.xm");
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
-include_background_gfx!(tileset1, tiles => "assets/Tileset1.aseprite");
+include_background_gfx!(tileset1, tiles => deduplicate "assets/Tileset1.aseprite");
 
-const GRAPHICS: &Graphics = include_aseprite!("assets/Sprites.aseprite");
+const GRAPHICS: &Graphics = include_aseprite!("assets/Sprites.aseprite", "assets/anim.aseprite");
+const TAG_MAP: &TagMap = GRAPHICS.tags();
 const SPRITE1: &Tag = &GRAPHICS.tags().get("Sprite1");
 const SPRITE2: &Tag = &GRAPHICS.tags().get("Sprite2");
+
+const ANIM: &Tag = TAG_MAP.get("Sprite1");
 
 struct Position {
     x: i32,
@@ -186,9 +189,24 @@ fn main(mut gba: Gba) -> ! {
     bg.show();
     bg2.commit(&mut vram);
     bg2.show();
+
+    // const IDLE: &Tag = TAG_MAP.get("emu - idle");
+    //
+    // let sprite = IDLE.sprite(self.sprite_offset as usize / 16);
+    // let sprite = controller.sprite(sprite);
+    // entity.sprite.set_sprite(sprite);
+
+    let mut sprite1_anim_frame = 0;
+
     loop {
         tracker.step(&mut mixer);
         mixer.frame();
+
+        sprite1_anim_frame = (sprite1_anim_frame + 1) % (16 * 2);
+
+        let frame_index = ANIM.sprite(sprite1_anim_frame / 16);
+        let sprite_frame = object.sprite(frame_index);
+        sprite1.set_sprite(sprite_frame);
 
         if input.is_pressed(Button::RIGHT) && sprite1_pos.x < WIDTH - 16 {
             sprite1_pos.x += 1;
