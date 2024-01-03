@@ -30,8 +30,10 @@ use agb::{
     sound::mixer::{Frequency, SoundChannel},
     Gba,
 };
+use agb_tracker::{include_xm, Track, Tracker};
 
 const SWORD_PICKUP: &[u8] = include_wav!("sfx/slime_death.wav");
+const THEME: Track = include_xm!("sfx/gwilym-theme2.xm");
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
@@ -70,6 +72,8 @@ fn main(mut gba: Gba) -> ! {
 
     // Play the sound once
     mixer.play_sound(channel);
+
+    let mut tracker = Tracker::new(&THEME);
 
     let mut start: bool = false;
     println!("{}", MESSAGE);
@@ -183,7 +187,9 @@ fn main(mut gba: Gba) -> ! {
     bg2.commit(&mut vram);
     bg2.show();
     loop {
+        tracker.step(&mut mixer);
         mixer.frame();
+
         if input.is_pressed(Button::RIGHT) && sprite1_pos.x < WIDTH - 16 {
             sprite1_pos.x += 1;
             sprite1.set_hflip(false);
@@ -210,8 +216,8 @@ fn main(mut gba: Gba) -> ! {
             }
             window.commit();
         }
-        if input.is_just_pressed(Button::SELECT) {
-            let mut channel = SoundChannel::new(SWORD_PICKUP); // Replace with your desired sound
+        if input.is_just_pressed(Button::A) {
+            let mut channel = SoundChannel::new(SWORD_PICKUP);
             channel.playback(num!(1.0));
             mixer.play_sound(channel);
         }
