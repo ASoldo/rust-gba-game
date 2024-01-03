@@ -15,14 +15,17 @@
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
 
 use agb::{
-    display::object::{Graphics, Tag, TagMap},
     display::{
-        tiled::{RegularBackgroundSize, TiledMap},
+        object::{Graphics, Tag, TagMap},
+        tiled::TileFormat,
+    },
+    display::{
+        tiled::{InfiniteScrolledMap, RegularBackgroundSize, TiledMap},
         window::WinIn,
         Priority, HEIGHT, WIDTH,
     },
     fixnum::num,
-    fixnum::Rect,
+    fixnum::{Rect, Vector2D},
     include_aseprite, include_background_gfx, include_wav,
     input::Button,
     interrupt::VBlank,
@@ -31,6 +34,8 @@ use agb::{
     Gba,
 };
 use agb_tracker::{include_xm, Track, Tracker};
+extern crate alloc;
+use alloc::boxed::Box;
 
 const SWORD_PICKUP: &[u8] = include_wav!("sfx/slime_death.wav");
 const THEME: Track = include_xm!("sfx/gwilym-theme2.xm");
@@ -58,7 +63,6 @@ struct DemoLog {
 // ensures that everything is in order. `agb` will call this after setting up the stack
 // and interrupt handlers correctly. It will also handle creating the `Gba` struct for you.
 // #[cfg_attr(feature = "entry", agb::entry)]
-
 #[agb::entry]
 fn entry(gba: Gba) -> ! {
     main(gba);
@@ -84,11 +88,40 @@ fn main(mut gba: Gba) -> ! {
     let tileset = tileset1::tiles.tiles;
     let (gfx, mut vram) = gba.display.video.tiled0();
     vram.set_background_palettes(tileset1::PALETTES);
-    let mut bg = gfx.background(
-        Priority::P3,
-        RegularBackgroundSize::Background32x32,
-        tileset.format(),
+
+    // Initialize InfiniteScrolledMap for the background
+    let mut infinite_bg = InfiniteScrolledMap::new(
+        gfx.background(
+            Priority::P3,
+            RegularBackgroundSize::Background32x32,
+            TileFormat::FourBpp,
+        ),
+        Box::new(|pos| {
+            let index = pos.y * 30 + pos.x;
+            let tile_id = if pos.x < 30 && pos.y < 20 && pos.x >= 0 && pos.y >= 0 {
+                // Within bounds, fetch the corresponding tile ID
+                *TILE_MAP.get(index as usize).unwrap_or(&1)
+            } else {
+                // Out of bounds, use tile ID 1 (or another ID representing an edge or empty tile)
+                7
+            };
+            (&tileset, tileset1::tiles.tile_settings[tile_id as usize])
+        }),
     );
+
+    // Set the initial position of the scrolled background
+    let start_pos = (0, 0).into();
+    infinite_bg.init(&mut vram, start_pos, &mut || {});
+
+    // Show the infinite background
+    infinite_bg.commit(&mut vram);
+    infinite_bg.show();
+
+    // let mut bg = gfx.background(
+    //     Priority::P3,
+    //     RegularBackgroundSize::Background32x32,
+    //     tileset.format(),
+    // );
 
     let mut bg2 = gfx.background(
         Priority::P0,
@@ -102,24 +135,24 @@ fn main(mut gba: Gba) -> ! {
         tileset.format(),
     );
 
-    for y in 0..20u16 {
-        for x in 0..30u16 {
-            // Calculate the index in the 1D TILE_MAP array based on x, y coordinates
-            let index = y as usize * 30 + x as usize; // Assuming row-major order
-
-            // Get the tile ID from the TILE_MAP using the calculated index
-            let tile_id = TILE_MAP[index] as usize; // Cast to usize to use as an index
-
-            // Set the tile on the background using the tile ID from TILE_MAP
-            // Make sure that tileset1::tiles.tile_settings[tile_id] gives you the correct setting for that tile ID
-            bg.set_tile(
-                &mut vram,
-                (x, y).into(),
-                &tileset,
-                tileset1::tiles.tile_settings[tile_id],
-            );
-        }
-    }
+    // for y in 0..20u16 {
+    //     for x in 0..30u16 {
+    //         // Calculate the index in the 1D TILE_MAP array based on x, y coordinates
+    //         let index = y as usize * 30 + x as usize; // Assuming row-major order
+    //
+    //         // Get the tile ID from the TILE_MAP using the calculated index
+    //         let tile_id = TILE_MAP[index] as usize; // Cast to usize to use as an index
+    //
+    //         // Set the tile on the background using the tile ID from TILE_MAP
+    //         // Make sure that tileset1::tiles.tile_settings[tile_id] gives you the correct setting for that tile ID
+    //         bg.set_tile(
+    //             &mut vram,
+    //             (x, y).into(),
+    //             &tileset,
+    //             tileset1::tiles.tile_settings[tile_id],
+    //         );
+    //     }
+    // }
 
     for i in 0..3u16 {
         bg3.set_tile(
@@ -141,7 +174,8 @@ fn main(mut gba: Gba) -> ! {
     window
         .win_in(WinIn::Win0)
         .set_background_enable(bg3.background(), true)
-        .set_background_enable(bg.background(), true)
+        // .set_background_enable(bg.background(), true)
+        .set_background_enable(infinite_bg.background(), true)
         .set_object_enable(true)
         .set_blend_enable(true)
         .set_position(&Rect::new((0, 0).into(), (24, 8).into()))
@@ -150,7 +184,8 @@ fn main(mut gba: Gba) -> ! {
 
     window
         .win_out()
-        .set_background_enable(bg.background(), true)
+        // .set_background_enable(bg.background(), true)
+        .set_background_enable(infinite_bg.background(), true)
         .set_background_enable(bg2.background(), true)
         .set_object_enable(true)
         .set_blend_enable(true)
@@ -174,7 +209,10 @@ fn main(mut gba: Gba) -> ! {
     let mut input = agb::input::ButtonController::new();
     let object = gba.display.object.get_managed();
     let mut sprite1 = object.object_sprite(SPRITE1.sprite(0));
-    let mut sprite1_pos = Position { x: 50, y: 50 };
+    let mut sprite1_pos = Position {
+        x: WIDTH / 2 - 8,
+        y: HEIGHT / 2 - 8,
+    };
     sprite1.set_priority(Priority::P3);
     sprite1
         .set_x(sprite1_pos.x as u16)
@@ -185,17 +223,10 @@ fn main(mut gba: Gba) -> ! {
     sprite2.set_priority(Priority::P3);
     sprite2.set_x(150).set_y(50).show();
 
-    bg.commit(&mut vram);
-    bg.show();
+    // bg.commit(&mut vram);
+    // bg.show();
     bg2.commit(&mut vram);
     bg2.show();
-
-    // const IDLE: &Tag = TAG_MAP.get("emu - idle");
-    //
-    // let sprite = IDLE.sprite(self.sprite_offset as usize / 16);
-    // let sprite = controller.sprite(sprite);
-    // entity.sprite.set_sprite(sprite);
-
     // Find the frame count for Sprite1
     let sprite1_frame_count = ANIMATION_FRAMES
         .iter()
@@ -204,6 +235,14 @@ fn main(mut gba: Gba) -> ! {
         .unwrap_or(1); // Default to 1 if not found
 
     let mut sprite1_anim_frame = 0;
+
+    let mut bg_position = Vector2D::new(0, 0);
+
+    // Define the centering bounds as a rectangle
+    let centering_bounds = Rect::new(
+        Vector2D::new(WIDTH as i32 / 4, HEIGHT as i32 / 4),
+        Vector2D::new(WIDTH as i32 / 2, HEIGHT as i32 / 2),
+    );
 
     loop {
         tracker.step(&mut mixer);
@@ -216,17 +255,21 @@ fn main(mut gba: Gba) -> ! {
         sprite1.set_sprite(sprite_frame);
 
         if input.is_pressed(Button::RIGHT) && sprite1_pos.x < WIDTH - 16 {
+            // bg_position.x += 1;
             sprite1_pos.x += 1;
             sprite1.set_hflip(false);
         }
         if input.is_pressed(Button::LEFT) && sprite1_pos.x > 0 {
+            // bg_position.x -= 1;
             sprite1_pos.x -= 1;
             sprite1.set_hflip(true);
         }
         if input.is_pressed(Button::UP) && sprite1_pos.y > 0 {
+            // bg_position.y -= 1;
             sprite1_pos.y -= 1;
         }
         if input.is_pressed(Button::DOWN) && sprite1_pos.y < HEIGHT - 16 {
+            // bg_position.y += 1;
             sprite1_pos.y += 1;
         }
         if input.is_just_pressed(Button::START) {
@@ -251,8 +294,25 @@ fn main(mut gba: Gba) -> ! {
             .set_x(sprite1_pos.x as u16)
             .set_y(sprite1_pos.y as u16);
 
+        // bg_position.x += 1;
+        // bg_position.y -= 1;
+
+        // let center = Vector2D::new(WIDTH as i32 / 2, HEIGHT as i32 / 2);
+        // if sprite1_pos.x < center.x - centering_bounds.size.x / 2 {
+        //     bg_position.x = sprite1_pos.x + centering_bounds.size.x / 2 - center.x;
+        // } else if sprite1_pos.x > center.x + centering_bounds.size.x / 2 {
+        //     bg_position.x = sprite1_pos.x - center.x - centering_bounds.size.x / 2;
+        // }
+        //
+        // if sprite1_pos.y < center.y - centering_bounds.size.y / 2 {
+        //     bg_position.y = sprite1_pos.y + centering_bounds.size.y / 2 - center.y;
+        // } else if sprite1_pos.y > center.y + centering_bounds.size.y / 2 {
+        //     bg_position.y = sprite1_pos.y - center.y - centering_bounds.size.y / 2;
+        // }
+        infinite_bg.set_pos(&mut vram, bg_position);
         vblank.wait_for_vblank();
 
+        infinite_bg.commit(&mut vram);
         // blend.commit();
         object.commit();
         input.update();
